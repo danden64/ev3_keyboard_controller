@@ -2,12 +2,13 @@ import ev3_dc as ev3
 from time import sleep
 from keyboard import is_pressed
 
-def init_motor_settings(*motors: ev3.Motor):
+def init_motors(motors: list):
     for motor in motors:
-        motor.sync_mode = ev3.ASYNC
-        motor.delta_time = 0.01
-        motor.ramp_up_time = 0.1
-        motor.ramp_down_time = 0.1
+        if motor != None:
+            motor.sync_mode = ev3.ASYNC
+            motor.delta_time = 0.01
+            motor.ramp_up_time = 0.1
+            motor.ramp_down_time = 0.1
 
 def drive_motor(motor: ev3.Motor, speed: int, direction: int=1):
     if speed > 0:
@@ -34,34 +35,61 @@ def drive_motor_for(motor: ev3.Motor, time: float, speed: int, direction: int, b
     if is_pressed(keybind):
         motor.start_move_for(time, speed=speed, direction=direction, brake=brake)
 
+def drive_while_held(keybind: str, motor: ev3.Motor, speed: int, direction: int=1):
+    if is_pressed(keybind):
+        drive_motor(motor, speed, direction)
+
+def format_ID(brickID: str):
+    ID = ''
+    for i in range(5):
+        ID += brickID[2*i:2*(i+1)] + ':'
+    ID += brickID[10:12]
+    return ID
+
+
+
 def main():
     while True:
         try:
-            robot = ev3.EV3(protocol=ev3.BLUETOOTH, host='00:16:53:47:94:7e')
-            print(robot)
-            a = ev3.Motor(ev3.PORT_A, ev3_obj=robot)
-            b = ev3.Motor(ev3.PORT_B, ev3_obj=robot)
-            c = ev3.Motor(ev3.PORT_C, ev3_obj=robot)
-            d = ev3.Motor(ev3.PORT_D, ev3_obj=robot)
-            init_motor_settings(a, b, c, d)
+            brickID = '0016533f36a3'
+            robot = ev3.EV3(protocol=ev3.BLUETOOTH, host=format_ID(brickID))
+            motors = []
+            try:   
+                a = ev3.Motor(ev3.PORT_A, ev3_obj=robot)
+                motors.append(a)
+            except:
+                pass
+            try:
+                b = ev3.Motor(ev3.PORT_B, ev3_obj=robot)
+                motors.append(b)
+            except:
+                pass
+            try:
+                c = ev3.Motor(ev3.PORT_C, ev3_obj=robot)
+                motors.append(c)
+            except:
+                pass
+            try:
+                d = ev3.Motor(ev3.PORT_D, ev3_obj=robot)
+                motors.append(d)
+            except:
+                pass
+            init_motors(motors)
             ev3.Sound(ev3_obj=robot).tone(440, duration=0.1, volume=10)
-            
-            while True:
-                drive_robot(left=b, right=c, leftDirection=1, rightDirection=1, speedDrive=80, speedTurn=50)
+            print(robot)
 
-                #drive_motor_to(motor=d, angle=80, speed=40, brake=True, keybind='q')
-                #drive_motor_to(motor=d, angle=0, speed=40, brake=True, keybind='e')
-
-                #drive_motor_for(motor=d, time=1, speed=60, direction=-1, brake=False, keybind='f')
-
+            while not is_pressed('esc'):
+                
+                # ////////////////////
+                # WRITE YOUR CODE HERE
+                # ////////////////////
+                
                 sleep(0.01)
 
-        except KeyboardInterrupt:
+
             try:
-                a.stop()
-                b.stop()
-                c.stop()
-                d.stop()
+                for motor in motors:
+                    motor.stop()
                 del robot
                 print("Ended program successfully")
             except NameError:
@@ -73,8 +101,9 @@ def main():
                 print("Failed to connect to EV3")
                 sleep(1)
             else:
-                print('\n' + str(e))
+                raise e
             exit()
+
 
 if __name__ == "__main__":
     main()
